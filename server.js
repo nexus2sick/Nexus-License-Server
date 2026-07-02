@@ -11,6 +11,15 @@ app.get("/", (req, res) => {
   res.json({ status: "OK" });
 });
 
+app.post("/api/licenses/verify", (req, res) => {
+  const { license, hwid } = req.body;
+
+  return res.json({
+    success: true,
+    reason: "VALID"
+  });
+});
+
 app.listen(PORT, () => {
   console.log("running on", PORT);
 });
