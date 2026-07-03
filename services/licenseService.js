@@ -5,8 +5,8 @@ function createLicenses(amount, duration) {
     const licenses = [];
 
     const insert = db.prepare(`
-        INSERT INTO licenses (license, duration, createdAt, expiresAt, active, banned)
-        VALUES (?, ?, ?, ?, 1, 0)
+        INSERT INTO licenses (license, duration, createdAt, expiresAt, active, banned, hwid)
+        VALUES (?, ?, ?, ?, 1, 0, NULL)
     `);
 
     const check = db.prepare(`
@@ -30,16 +30,14 @@ function createLicenses(amount, duration) {
 
     return licenses;
 }
+
 function verifyLicense(license, hwid) {
     const find = db.prepare(`
-        SELECT * FROM licenses
-        WHERE license = ?
+        SELECT * FROM licenses WHERE license = ?
     `);
 
     const updateHWID = db.prepare(`
-        UPDATE licenses
-        SET hwid = ?
-        WHERE license = ?
+        UPDATE licenses SET hwid = ? WHERE license = ?
     `);
 
     const data = find.get(license);
@@ -56,7 +54,7 @@ function verifyLicense(license, hwid) {
     if (data.expiresAt && Date.now() > data.expiresAt)
         return { success: false, reason: "EXPIRED" };
 
-    // Primer uso: guarda el HWID
+    // HWID bind
     if (!data.hwid) {
         updateHWID.run(hwid, license);
 
@@ -66,7 +64,6 @@ function verifyLicense(license, hwid) {
         };
     }
 
-    // HWID distinto
     if (data.hwid !== hwid)
         return {
             success: false,
@@ -78,6 +75,7 @@ function verifyLicense(license, hwid) {
         reason: "VALID"
     };
 }
+
 module.exports = {
     createLicenses,
     verifyLicense
