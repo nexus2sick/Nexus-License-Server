@@ -26,13 +26,6 @@ require("./database");
    API ROUTES
 ======================= */
 app.use("/api/licenses", licenseRoutes);
-app.get("/debug-db", (req, res) => {
-    const db = require("./database");
-
-    const rows = db.prepare("SELECT * FROM licenses").all();
-
-    res.json(rows);
-});
 
 /* =======================
    DASHBOARD WEB PANEL
