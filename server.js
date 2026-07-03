@@ -29,7 +29,7 @@ app.get("/", (req, res) => {
     });
 });
 
-<<<<<<< HEAD
+
 app.post("/api/licenses/verify", (req, res) => {
   const { license, hwid } = req.body;
 
@@ -42,7 +42,6 @@ app.post("/api/licenses/verify", (req, res) => {
 app.listen(PORT, () => {
   console.log("running on", PORT);
 });
-=======
 
 const PORT = process.env.PORT || 8080;
 
