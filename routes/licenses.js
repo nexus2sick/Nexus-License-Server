@@ -1,16 +1,16 @@
 const express = require("express");
 const router = express.Router();
 
+const { createLicenses, verifyLicense } = require("../services/licenseService");
+
+// HEALTH CHECK (ESTO evita tu error "Cannot GET")
 router.get("/", (req, res) => {
     res.json({
         status: "ok",
-        message: "licenses route is working"
+        message: "licenses route working"
     });
 });
-
-const { createLicenses, verifyLicense } = require("../services/licenseService");
-
-// Crear licencias
+// CREATE
 router.post("/create", (req, res) => {
     try {
         const { amount, duration } = req.body;
@@ -28,9 +28,8 @@ router.post("/create", (req, res) => {
             success: true,
             licenses
         });
-    } catch (err) {
-        console.error(err);
 
+    } catch (err) {
         res.status(500).json({
             success: false,
             message: err.message
@@ -38,7 +37,7 @@ router.post("/create", (req, res) => {
     }
 });
 
-// Verificar licencia
+// VERIFY
 router.post("/verify", (req, res) => {
     try {
         const { license, hwid } = req.body;
@@ -51,11 +50,9 @@ router.post("/verify", (req, res) => {
         }
 
         const result = verifyLicense(license, hwid);
-
         res.json(result);
-    } catch (err) {
-        console.error(err);
 
+    } catch (err) {
         res.status(500).json({
             success: false,
             message: err.message
@@ -63,100 +60,71 @@ router.post("/verify", (req, res) => {
     }
 });
 
+// BAN
 router.post("/ban", (req, res) => {
-    try {
-        const { license } = req.body;
+    const db = require("../database");
 
-        const db = require("../database");
+    const { license } = req.body;
 
-        const stmt = db.prepare(`
-            UPDATE licenses
-            SET banned = 1
-            WHERE license = ?
-        `);
+    const stmt = db.prepare(`
+        UPDATE licenses
+        SET banned = 1
+        WHERE license = ?
+    `);
 
-        stmt.run(license);
+    stmt.run(license);
 
-        res.json({
-            success: true,
-            message: "license baneada"
-        });
-
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
+    res.json({
+        success: true,
+        message: "banned"
+    });
 });
 
+// UNBAN
 router.post("/unban", (req, res) => {
-    try {
-        const { license } = req.body;
+    const db = require("../database");
 
-        const db = require("../database");
+    const { license } = req.body;
 
-        const stmt = db.prepare(`
-            UPDATE licenses
-            SET banned = 0
-            WHERE license = ?
-        `);
+    const stmt = db.prepare(`
+        UPDATE licenses
+        SET banned = 0
+        WHERE license = ?
+    `);
 
-        stmt.run(license);
+    stmt.run(license);
 
-        res.json({
-            success: true,
-            message: "license desbaneada"
-        });
-
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: err.message
-        });
-    }
+    res.json({
+        success: true,
+        message: "unbanned"
+    });
 });
 
+// RESET HWID
 router.post("/reset-hwid", (req, res) => {
-    try {
-        const { license } = req.body;
+    const db = require("../database");
 
-        if (!license) {
-            return res.status(400).json({
-                success: false,
-                message: "license es requerida"
-            });
-        }
+    const { license } = req.body;
 
-        const db = require("../database");
+    const stmt = db.prepare(`
+        UPDATE licenses
+        SET hwid = NULL
+        WHERE license = ?
+    `);
 
-        const stmt = db.prepare(`
-            UPDATE licenses
-            SET hwid = NULL
-            WHERE license = ?
-        `);
+    const result = stmt.run(license);
 
-        const result = stmt.run(license);
-
-        if (result.changes === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "license no encontrada"
-            });
-        }
-
-        res.json({
-            success: true,
-            message: "HWID reseteado"
-        });
-
-    } catch (err) {
-        console.error(err);
-
-        res.status(500).json({
+    if (result.changes === 0) {
+        return res.status(404).json({
             success: false,
-            message: err.message
+            message: "not found"
         });
     }
+
+    res.json({
+        success: true,
+        message: "hwid reset"
+    });
 });
+
 module.exports = router;
