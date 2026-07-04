@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const basicAuth = require("express-basic-auth");
 
 const licenseRoutes = require("./routes/licenses");
 
@@ -12,8 +13,6 @@ const app = express();
    MIDDLEWARES IMPORTANTES
 ======================= */
 app.use(cors());
-
-// 🔥 ESTO ES LO QUE TE ESTABA ROMPIENDO EL /VERIFY
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -28,19 +27,27 @@ require("./database");
 app.use("/api/licenses", licenseRoutes);
 
 /* =======================
-   DASHBOARD WEB PANEL
+   PROTEGER DASHBOARD WEB PANEL
 ======================= */
-app.use(express.static(path.join(__dirname, "web")));
+const dashboardAuth = basicAuth({
+    users: {
+    nexus_owner: "JenueL309"
+},
+    challenge: true,
+    unauthorizedResponse: "Unauthorized"
+});
+
+app.use("/", dashboardAuth, express.static(path.join(__dirname, "web")));
 
 /* =======================
    ROOT
 ======================= */
-app.get("/", (req, res) => {
+app.get("/", dashboardAuth, (req, res) => {
     res.sendFile(path.join(__dirname, "web", "index.html"));
 });
 
 /* =======================
-   DEBUG ROUTE (opcional)
+   DEBUG ROUTE
 ======================= */
 app.get("/health", (req, res) => {
     res.json({
