@@ -1,5 +1,5 @@
 console.log("APP JS CARGADO");
-const API = "http://localhost:3000/api/licenses";
+const API = "/api/licenses";
 
 const output = document.getElementById("output");
 
