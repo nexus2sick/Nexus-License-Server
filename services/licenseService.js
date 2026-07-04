@@ -2,6 +2,10 @@ const db = require("../database");
 const { generateLicenseKey } = require("./keyGenerator");
 
 function createLicenses(amount, duration) {
+
+    amount = parseInt(amount);
+duration = parseInt(duration);
+
     const licenses = [];
 
     const insert = db.prepare(`
