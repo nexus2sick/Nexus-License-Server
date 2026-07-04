@@ -42,6 +42,17 @@ function verifyLicense(license, hwid) {
 
     const data = find.get(license);
 
+    const now = Date.now();
+
+let daysRemaining = 0;
+let lifetime = false;
+
+if (data && data.expiresAt === null) {
+    lifetime = true;
+} else if (data && data.expiresAt) {
+    daysRemaining = Math.ceil((data.expiresAt - now) / (1000 * 60 * 60 * 24));
+}
+
     if (!data)
         return { success: false, reason: "INVALID_LICENSE" };
 
@@ -59,9 +70,11 @@ function verifyLicense(license, hwid) {
         updateHWID.run(hwid, license);
 
         return {
-            success: true,
-            reason: "FIRST_LOGIN"
-        };
+    success: true,
+    reason: "FIRST_LOGIN",
+    daysRemaining,
+    lifetime
+};
     }
 
     if (data.hwid !== hwid)
@@ -71,9 +84,11 @@ function verifyLicense(license, hwid) {
         };
 
     return {
-        success: true,
-        reason: "VALID"
-    };
+    success: true,
+    reason: "VALID",
+    daysRemaining,
+    lifetime
+};
 }
 
 module.exports = {
