@@ -1,7 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-const { createLicenses, verifyLicense } = require("../services/licenseService");
+const {
+    createLicenses,
+    verifyLicense,
+    banLicense,
+    unbanLicense,
+    resetHWID
+} = require("../services/licenseService");
 
 // HEALTH CHECK
 router.get("/", (req, res) => {
@@ -38,7 +44,7 @@ router.post("/create", (req, res) => {
     }
 });
 
-// VERIFY LICENSE 🔥
+// VERIFY LICENSE
 router.post("/verify", (req, res) => {
     try {
         console.log("BODY RECIBIDO:", req.body);
@@ -53,12 +59,87 @@ router.post("/verify", (req, res) => {
         }
 
         const result = verifyLicense(license, hwid);
-        return res.json(result);
+        res.json(result);
 
     } catch (err) {
         console.error(err);
 
-        return res.status(500).json({
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+
+// BAN LICENSE
+router.post("/ban", (req, res) => {
+    try {
+        const { license } = req.body;
+
+        if (!license) {
+            return res.status(400).json({
+                success: false,
+                message: "license requerida"
+            });
+        }
+
+        const result = banLicense(license);
+        res.json(result);
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+
+// UNBAN LICENSE
+router.post("/unban", (req, res) => {
+    try {
+        const { license } = req.body;
+
+        if (!license) {
+            return res.status(400).json({
+                success: false,
+                message: "license requerida"
+            });
+        }
+
+        const result = unbanLicense(license);
+        res.json(result);
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
+            success: false,
+            message: err.message
+        });
+    }
+});
+
+// RESET HWID
+router.post("/reset-hwid", (req, res) => {
+    try {
+        const { license } = req.body;
+
+        if (!license) {
+            return res.status(400).json({
+                success: false,
+                message: "license requerida"
+            });
+        }
+
+        const result = resetHWID(license);
+        res.json(result);
+
+    } catch (err) {
+        console.error(err);
+
+        res.status(500).json({
             success: false,
             message: err.message
         });

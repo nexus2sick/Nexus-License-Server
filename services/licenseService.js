@@ -2,9 +2,8 @@ const db = require("../database");
 const { generateLicenseKey } = require("./keyGenerator");
 
 function createLicenses(amount, duration) {
-
     amount = parseInt(amount);
-duration = parseInt(duration);
+    duration = parseInt(duration);
 
     const licenses = [];
 
@@ -25,10 +24,11 @@ duration = parseInt(duration);
         } while (check.get(key));
 
         const now = Date.now();
-        const expiresAt = duration === -1 ? null : now + duration * 24 * 60 * 60 * 1000;
+        const expiresAt = duration === -1
+            ? null
+            : now + duration * 24 * 60 * 60 * 1000;
 
         insert.run(key, duration, now, expiresAt);
-
         licenses.push(key);
     }
 
@@ -45,57 +45,117 @@ function verifyLicense(license, hwid) {
     `);
 
     const data = find.get(license);
-
     const now = Date.now();
 
-let daysRemaining = 0;
-let lifetime = false;
-
-if (data && data.expiresAt === null) {
-    lifetime = true;
-} else if (data && data.expiresAt) {
-    daysRemaining = Math.ceil((data.expiresAt - now) / (1000 * 60 * 60 * 24));
-}
-
-    if (!data)
+    if (!data) {
         return { success: false, reason: "INVALID_LICENSE" };
+    }
 
-    if (!data.active)
+    let daysRemaining = 0;
+    let lifetime = false;
+
+    if (data.expiresAt === null) {
+        lifetime = true;
+    } else if (data.expiresAt) {
+        daysRemaining = Math.ceil((data.expiresAt - now) / (1000 * 60 * 60 * 24));
+    }
+
+    if (!data.active) {
         return { success: false, reason: "INACTIVE" };
+    }
 
-    if (data.banned)
+    if (data.banned) {
         return { success: false, reason: "BANNED" };
+    }
 
-    if (data.expiresAt && Date.now() > data.expiresAt)
+    if (data.expiresAt && now > data.expiresAt) {
         return { success: false, reason: "EXPIRED" };
+    }
 
-    // HWID bind
     if (!data.hwid) {
         updateHWID.run(hwid, license);
 
         return {
-    success: true,
-    reason: "FIRST_LOGIN",
-    daysRemaining,
-    lifetime
-};
+            success: true,
+            reason: "FIRST_LOGIN",
+            daysRemaining,
+            lifetime
+        };
     }
 
-    if (data.hwid !== hwid)
-        return {
-            success: false,
-            reason: "HWID_MISMATCH"
-        };
+    if (data.hwid !== hwid) {
+        return { success: false, reason: "HWID_MISMATCH" };
+    }
 
     return {
-    success: true,
-    reason: "VALID",
-    daysRemaining,
-    lifetime
-};
+        success: true,
+        reason: "VALID",
+        daysRemaining,
+        lifetime
+    };
+}
+
+function banLicense(license) {
+    const find = db.prepare(`SELECT * FROM licenses WHERE license = ?`);
+    const update = db.prepare(`UPDATE licenses SET banned = 1 WHERE license = ?`);
+
+    const data = find.get(license);
+
+    if (!data) {
+        return { success: false, reason: "INVALID_LICENSE" };
+    }
+
+    update.run(license);
+
+    return {
+        success: true,
+        message: "License banned",
+        license
+    };
+}
+
+function unbanLicense(license) {
+    const find = db.prepare(`SELECT * FROM licenses WHERE license = ?`);
+    const update = db.prepare(`UPDATE licenses SET banned = 0 WHERE license = ?`);
+
+    const data = find.get(license);
+
+    if (!data) {
+        return { success: false, reason: "INVALID_LICENSE" };
+    }
+
+    update.run(license);
+
+    return {
+        success: true,
+        message: "License unbanned",
+        license
+    };
+}
+
+function resetHWID(license) {
+    const find = db.prepare(`SELECT * FROM licenses WHERE license = ?`);
+    const update = db.prepare(`UPDATE licenses SET hwid = NULL WHERE license = ?`);
+
+    const data = find.get(license);
+
+    if (!data) {
+        return { success: false, reason: "INVALID_LICENSE" };
+    }
+
+    update.run(license);
+
+    return {
+        success: true,
+        message: "HWID reset",
+        license
+    };
 }
 
 module.exports = {
     createLicenses,
-    verifyLicense
+    verifyLicense,
+    banLicense,
+    unbanLicense,
+    resetHWID
 };
